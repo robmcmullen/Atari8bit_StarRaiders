@@ -1,7 +1,7 @@
 
 ; Star Raiders
 ; Copyright (c) 1979 Atari
-; Programmed by ...
+; Programmed by Doug Neubauer
 
 ; Macros
 
@@ -161,8 +161,8 @@ CHARSET1 = $E000 ; standard Atari character set
 
 ; ----------------------------------------------------------------------------
 
-        .segment "cartridge"
-        .org $A000
+    .code
+    .proc codestart
 
 ; ----------------------------------------------------------------------------
 
@@ -3887,3 +3887,19 @@ cart_start:         .word   $704
 cart_not_present:   .byte   $00
 cart_options:       .byte   $80
 cart_init:          .word   main
+
+END:
+    .endproc
+
+RUNAD = $2E0
+
+
+    .segment "EXEHDR"
+    .word $FFFF
+    .word codestart
+    .word codestart::END - 1
+
+    .segment "AUTOSTRT"
+    .word RUNAD
+    .word RUNAD + 1
+    .word codestart::main
