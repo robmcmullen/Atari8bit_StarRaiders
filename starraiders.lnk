@@ -1,6 +1,6 @@
 FEATURES
 {
-    STARTADDRESS: default = $4000;
+    STARTADDRESS: default = $A000;
 }
 
 SYMBOLS
