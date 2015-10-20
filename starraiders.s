@@ -5320,7 +5320,7 @@ DAMAGE:                         ; DAMAGE CONTROL RAM, +0=PH:
 DSDATE:                         ; DISP OF STAR DATE
 		.res		5
 		.res		5
-STRRAM:                         ; RAM FOR STARS , OBJECTS  :
+STRRAM:                         ; RAM FOR STARS , OBJECTS POSITIONS, ETC.
 XSIGN:                          ; SIGN OF XPOS 
 		.res		RAMNUM
 YSIGN:          
@@ -5339,7 +5339,7 @@ YPOSL:
 		.res		RAMNUM
 ZPOSL:          
 		.res		RAMNUM
-XINCRE:                         ; OBJECTS X DIRECTION VELOC:
+XINCRE:                         ; OBJECTS X DIRECTION VELOCITY
 		.res		RAMNUM
 YINCRE:         
 		.res		RAMNUM
@@ -5351,16 +5351,14 @@ HPOS:                           ; HORIZ POS ON SCREEN
 		.res		RAMNUM
 OLDVER:                         ; OLD VERT POSIT 
 		.res		RAMNUM
-GINDEX:                         ; TYPE OF GRAPHIC,         :
-OLDHOR:                         ; OLD HORIZ POSIT          :
+GINDEX:                         ; TYPE OF GRAPHIC: OBJECT
+OLDHOR:                         ; OLD HORIZ POSIT: STARS
 		.res		RAMNUM
-OLDNUM:                         ; PREVIOUS NUMBER OF BYTES :
-OLDBYT:                         ; OLD BYTE IN RAM MAP      :
+OLDNUM:                         ; PREVIOUS NUMBER OF BYTES
+OLDBYT:                         ; OLD BYTE IN RAM MAP
 		.res		RAMNUM
-                                
-
-NUMBYT:                         ; HOW MAY BYTES TO STORE   :
-STRBYT:                         ; THE BYTE TO STORE        :
+NUMBYT:                         ; HOW MAY BYTES TO STORE: OBJCET
+STRBYT:                         ; THE BYTE TO STORE: STARS
 		.res		RAMNUM
 MESAGE:                         ; DISPLAY OF MESSAGE RAM 
 		.res		20			; BUFFER ZONE
