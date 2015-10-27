@@ -303,6 +303,126 @@ COLRAM:                         ; PLAYER AND PLAYFIELD COLO:
 ;       ***************************************************:
 PHASE4:         
 ;
+
+
+
+        .segment "LOWCODE"
+        .ORG     $9000
+        .proc divstart
+
+DIVIDE:         
+;       A = (TOP/BOTTOM)X80
+;
+        CLC                ; skip to next 8 byte boundary
+        LDA DIVSTORE
+        ADC #$08
+        STA DIVSTORE
+        STA PNTR
+        LDA DIVSTORE + 1
+        ADC #$00
+        STA DIVSTORE + 1
+        CMP DIVIDE/256
+        BCC @1
+        LDA #<DIVRAM
+        STA DIVSTORE
+        STA PNTR
+        LDA #DIVRAM/256
+        STA DIVSTORE + 1
+@1:     STA PNTR + 1
+        LDY #$00
+        LDA TEMP
+        STA (PNTR),Y
+        INY
+        LDA TEMP1
+        STA (PNTR),Y
+        INY
+        LDA XPOSL,X         ; denominator
+        STA (PNTR),Y
+        INY
+        LDA XPOSH,X
+        STA (PNTR),Y
+
+        LDA     #$00            ;CLEAR THE RESULT 
+        STA     TEMP3
+        LDA     #$07            ; NUMBER OF SHIFTS 
+        STA     TEMP4
+; SHIFT 0 INTO THE MSBIT
+        LSR     TEMP1           ; TOP NUMBER
+        ROR     TEMP
+        LDA     DISFLG          ; FRONT OR BACK  ? 
+        BNE     DIVID1          ; BACK 
+        LDA     XPOSH,X         ; BOTTOM NUMBER 
+        LSR     A
+        STA     PNTR+1
+        LDA     XPOSL,X
+        ROR     A
+        STA     PNTR
+        JMP     DIVID2
+DIVID1:         
+        SEC     
+        LDA     #$00
+        SBC     XPOSL,X
+        STA     PNTR
+        LDA     #$00
+        SBC     XPOSH,X
+        LSR     A
+        STA     PNTR+1
+        ROR     PNTR
+;
+DIVID2:         
+        ASL     TEMP3           ; SHIFT RESULT 
+                                
+
+        SEC                     ; SUBTRACT BOTTOM FROM TOP 
+        LDA     TEMP
+        SBC     PNTR
+        TAY     
+        LDA     TEMP1
+        SBC     PNTR+1
+        BCC     DIVID3          ; BOTTOM GREATER THAN TOP 
+;               TOP LARGER
+        STA     TEMP1           ; STORE REMAINDER 
+        STY     TEMP
+        INC     TEMP3           ; ADD 1 TO RESULT 
+DIVID3:         
+        ASL     TEMP            ; SHIFT TOP
+        ROL     TEMP1
+        BCC     DIVID4
+;               IF TOP IS GREATER THN BOTTOM THEN OVERFLOW
+        LDA     #$FF            ; MAX VALUE TO RESULT 
+        RTS     
+DIVID4:         
+        DEC     TEMP4           ; NEXT BIT 
+        BPL     DIVID2
+
+        LDA DIVSTORE
+        STA PNTR
+        LDA DIVSTORE + 1
+        STA PNTR + 1
+        LDY #$04
+        LDA #$FF
+        STA (PNTR),Y
+        INY
+        LDA     TEMP3           ; RESULT to storage
+        STA (PNTR),Y
+        LDY     TEMP3           ; RESULT IN Y 
+        LDA     PTAB,Y          ; MULTIPLY BY 80  (PTAB) 
+        LDY #$06
+        STA (PNTR),Y
+
+        LDY     TEMP3           ; RESULT IN Y 
+        LDA     PTAB,Y          ; MULTIPLY BY 80  (PTAB) 
+DIVID5:                         ; ENTRY POINT FROM THINK  *:
+        RTS     
+;
+;
+;
+;
+DIVEND:
+    .endproc
+
+
+
                                 
 .segment  "CODE"
 ;
@@ -560,6 +680,10 @@ PHASE8:
 ;               INIT SECTION
 ;
 INIT:           
+        LDA #<DIVRAM
+        STA DIVSTORE
+        LDA #DIVRAM/256
+        STA DIVSTORE + 1
         LDA     #$00
         STA     SKCTL
         STA     TIMOUT          ; RESET TIMEOUT
@@ -1153,7 +1277,7 @@ CALCV8:
         LDA     ZPOSH,X
         STA     TEMP1
 CALCV9:         
-        JSR     DIVIDE          ; DIVIDE ZPOS BY XPOS 
+        JSR     divstart::DIVIDE          ; DIVIDE ZPOS BY XPOS 
         JSR     STVPOS          ; STOE VPO 
 ;
 ;                       UPDATE HORIZ POS
@@ -1178,7 +1302,7 @@ CALCV3:
         LDA     YPOSH,X
         STA     TEMP1
 CALCV4:         
-        JSR     DIVIDE          ; DIVIDE YPOS BY XPOS 
+        JSR     divstart::DIVIDE          ; DIVIDE YPOS BY XPOS 
 CALCV5:         
         JSR     STHPOS          ; STORE HPOS
 ;
@@ -2107,74 +2231,11 @@ HLINE1:
 ;
 ;
 
-DIVIDE:         
-;       A = (TOP/BOTTOM)X80
-;
-        LDA     #$00            ;CLEAR THE RESULT 
-        STA     TEMP3
-        LDA     #$07            ; NUMBER OF SHIFTS 
-        STA     TEMP4
-; SHIFT 0 INTO THE MSBIT
-        LSR     TEMP1           ; TOP NUMBER
-        ROR     TEMP
-        LDA     DISFLG          ; FRONT OR BACK  ? 
-        BNE     DIVID1          ; BACK 
-        LDA     XPOSH,X         ; BOTTOM NUMBER 
-        LSR     A
-        STA     PNTR+1
-        LDA     XPOSL,X
-        ROR     A
-        STA     PNTR
-        JMP     DIVID2
-DIVID1:         
-        SEC     
-        LDA     #$00
-        SBC     XPOSL,X
-        STA     PNTR
-        LDA     #$00
-        SBC     XPOSH,X
-        LSR     A
-        STA     PNTR+1
-        ROR     PNTR
-;
-DIVID2:         
-        ASL     TEMP3           ; SHIFT RESULT 
-                                
-
-        SEC                     ; SUBTRACT BOTTOM FROM TOP 
-        LDA     TEMP
-        SBC     PNTR
-        TAY     
-        LDA     TEMP1
-        SBC     PNTR+1
-        BCC     DIVID3          ; BOTTOM GREATER THAN TOP 
-;               TOP LARGER
-        STA     TEMP1           ; STORE REMAINDER 
-        STY     TEMP
-        INC     TEMP3           ; ADD 1 TO RESULT 
-DIVID3:         
-        ASL     TEMP            ; SHIFT TOP
-        ROL     TEMP1
-        BCC     DIVID4
-;               IF TOP IS GREATER THN BOTTOM THEN OVERFLOW
-        LDA     #$FF            ; MAX VALUE TO RESULT 
-        RTS     
-DIVID4:         
-        DEC     TEMP4           ; NEXT BIT 
-        BPL     DIVID2
-        LDY     TEMP3           ; RESULT IN Y 
-        LDA     PTAB,Y          ; MULTIPLY BY 80  (PTAB) 
-DIVID5:                         ; ENTRY POINT FROM THINK  *:
-        RTS     
-;
-;
-;
-;
 THINK:          
 ;               COMPUTER ATTACK SUBROUTINE
         LDA     HFLAG
         ORA     BASFLG
-        BNE     DIVID5          ; BRANCH TO RTS 
+        BNE     HLINE1          ; BRANCH TO RTS 
 ;               CRUISER PHOTON CONVERGENCE
         LDA     LOKLOC
         BEQ     THIN38
@@ -5225,14 +5286,6 @@ PHASE5:
 ;
                                 
 
-;
-;               CARTRIDGE OPERATING CODES
-;
-        .ORG     $BFFC
-        .byte      0               ; CARTRIDGE IN FLAG
-        .byte      $80             ; RUN CARTRIDGE IMMEDIATELY
-        .word      INIT            ; START ADDR POINTER
-
 END:
     .endproc
 
@@ -5357,7 +5410,7 @@ OLDHOR:                         ; OLD HORIZ POSIT: STARS
 OLDNUM:                         ; PREVIOUS NUMBER OF BYTES
 OLDBYT:                         ; OLD BYTE IN RAM MAP
 		.res		RAMNUM
-NUMBYT:                         ; HOW MAY BYTES TO STORE: OBJCET
+NUMBYT:                         ; HOW MAY BYTES TO STORE: OBJECT
 STRBYT:                         ; THE BYTE TO STORE: STARS
 		.res		RAMNUM
 MESAGE:                         ; DISPLAY OF MESSAGE RAM 
@@ -5379,6 +5432,13 @@ MEMMAP:                         ; SCREEN MAP RAM
 		.res		4096
 MEMEND:         
 PHASE3:         
+
+
+        .ORG $4000
+DIVSTORE:        .res 16        ; pointer to next storage space
+DIVRAM:                        ; division storage
+                .res $4000
+
 ;
 ;                       END PROGRAM
 
@@ -5390,6 +5450,10 @@ RUNAD = $2E0
     .word $FFFF
     .word codestart
     .word codestart::END - 1
+
+    .segment "DIVSEG"
+    .word divstart
+    .word divstart::DIVEND - 1
 
     .segment "AUTOSTRT"
     .word RUNAD
